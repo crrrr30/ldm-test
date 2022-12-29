@@ -7,6 +7,40 @@ def upsample(x: torch.Tensor, factor):
     return F.upsample_bilinear(x, scale_factor=factor)
 
 
+class Bottleneck(nn.Module):
+    
+    expansion = 4
+
+    def __init__(self, in_planes, planes, downsample = None):
+
+        super(Bottleneck, self).__init__()
+        self.downsample = downsample
+        self.net = nn.Sequential(
+                    nn.Conv3d(in_planes, planes, 1, 1, 0, bias = False),
+                    nn.BatchNorm3d(planes),
+                    nn.ReLU(),
+                    nn.Conv3d(planes, planes, 3, 1, 1, bias = False),
+                    nn.BatchNorm3d(planes),
+                    nn.ReLU(),
+                    nn.Conv3d(planes, planes * self.expansion, 1, 1, 0, bias = False),
+                    nn.BatchNorm3d(planes * self.expansion)
+                )
+        self.relu = nn.ReLU()
+
+        return
+
+    def forward(self, x):
+
+        if self.downsample is None:
+            residual = x
+        else:
+            residual = self.downsample(x)
+
+        y = self.relu(self.net(x) + residual)
+
+        return y
+        
+
 class VoxResModule(nn.Module):
 
     def __init__(self, num_channels):
