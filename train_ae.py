@@ -55,7 +55,7 @@ for step in pbar:
     if data.shape[-1] != image_size:
         data = F.interpolate(data, image_size, mode="bilinear", align_corners=True)
     z = encoder(data + epsilon * torch.randn_like(data))
-    reconstruction = decoder(data)
+    reconstruction = decoder(z)
     loss = F.l1_loss(reconstruction, data)
     loss.backward()
     torch.nn.utils.clip_grad_norm_(list(encoder.parameters()) + list(decoder.parameters()), 1.)
