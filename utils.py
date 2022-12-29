@@ -1,4 +1,4 @@
-import tqdm
+from tqdm.notebook import tqdm
 from inspect import isfunction
 from prettytable import PrettyTable
 
@@ -149,7 +149,7 @@ def p_sample_loop(hyperparams, model, shape):
     img = torch.randn(shape, device=device)
     imgs = []
     
-    for i in tqdm.tqdm(reversed(range(0, hyperparams["timesteps"])), desc='Sampling loop time step', total=hyperparams["timesteps"]):
+    for i in tqdm(reversed(range(0, hyperparams["timesteps"])), desc='Sampling loop time step', total=hyperparams["timesteps"]):
         img = p_sample(hyperparams, model, img, torch.full((b,), i, device=device, dtype=torch.long), i)
         imgs.append(img.cpu().numpy())
     return imgs
@@ -161,7 +161,7 @@ def p_sample_loop_final(hyperparams, model, shape):
     b = shape[0]
     # start from pure noise (for each example in the batch)
     img = torch.randn(shape, device=device)
-    for i in tqdm.tqdm(reversed(range(0, hyperparams["timesteps"])), desc='Sampling loop time step', total=hyperparams["timesteps"]):
+    for i in tqdm(reversed(range(0, hyperparams["timesteps"])), desc='Sampling loop time step', total=hyperparams["timesteps"]):
         img = p_sample(hyperparams, model, img, torch.full((b,), i, device=device, dtype=torch.long), i)
     return img
 

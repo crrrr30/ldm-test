@@ -1,4 +1,4 @@
-import tqdm
+from tqdm.notebook import tqdm
 import logging
 
 import torch
@@ -35,7 +35,7 @@ sched = ScheduledOptim(opt, total_steps=total_steps, base=1e-3, decay_type="cosi
 count_parameters(encoder, model_name="Encoder")
 count_parameters(decoder, model_name="Decoder")
 
-pbar = tqdm.trange(total_steps + 1)
+pbar = tqdm(range(total_steps + 1))
 
 resume = None
 if resume is not None:
