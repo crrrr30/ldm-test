@@ -16,14 +16,14 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.downsample = downsample
         self.net = nn.Sequential(
-                    nn.Conv3d(in_planes, planes, 1, 1, 0, bias = False),
-                    nn.BatchNorm3d(planes),
+                    nn.Conv2d(in_planes, planes, 1, 1, 0, bias = False),
+                    nn.InstanceNorm2d(planes),
                     nn.ReLU(),
-                    nn.Conv3d(planes, planes, 3, 1, 1, bias = False),
-                    nn.BatchNorm3d(planes),
+                    nn.Conv2d(planes, planes, 3, 1, 1, bias = False),
+                    nn.InstanceNorm2d(planes),
                     nn.ReLU(),
-                    nn.Conv3d(planes, planes * self.expansion, 1, 1, 0, bias = False),
-                    nn.BatchNorm3d(planes * self.expansion)
+                    nn.Conv2d(planes, planes * self.expansion, 1, 1, 0, bias = False),
+                    nn.InstanceNorm2d(planes * self.expansion)
                 )
         self.relu = nn.ReLU()
 
