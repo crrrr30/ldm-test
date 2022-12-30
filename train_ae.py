@@ -2,8 +2,10 @@ from tqdm.notebook import tqdm
 import logging
 
 import torch
-from torch.optim import Adam
+import torch.nn as nn
 import torch.nn.functional as F
+
+from torch.optim import Adam
 
 from myresdecoder import VoxResNet as Decoder
 from myresencoder import VoxResNet as Encoder
@@ -13,9 +15,9 @@ from scheduler import ScheduledOptim
 
 device = "cuda"
 image_size = 512
-batch_size = 32
-total_steps = 30000
-warmup_steps = 2000
+batch_size = 256
+total_steps = 100000
+warmup_steps = 10000
 
 
 logging.basicConfig(
@@ -30,6 +32,9 @@ dataloader = get_dataloader(batch_size=batch_size)
 
 encoder = Encoder(3, 512).to(device)
 decoder = Decoder(512, 3).to(device)
+encoder = nn.DataParallel(encoder)
+decoder = nn.DataParallel(decoder)
+
 opt = Adam(list(encoder.parameters()) + list(decoder.parameters()), betas=(.9, .999))
 sched = ScheduledOptim(opt, total_steps=total_steps, base=1e-3, decay_type="cosine", warmup_steps=warmup_steps)
 count_parameters(encoder, model_name="Encoder")
@@ -66,8 +71,8 @@ for step in pbar:
         torch.save({
             'opt': opt.state_dict(),
             'sched': sched.state_dict(),
-            'encoder': encoder.state_dict(),
-            'decoder': decoder.state_dict(),
+            'encoder': encoder.module.state_dict(),
+            'decoder': decoder.module.state_dict(),
         }, f'./ae-ckpt-{step:06}.pt')
 
 

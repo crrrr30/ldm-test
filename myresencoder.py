@@ -161,7 +161,7 @@ class VoxResNet(nn.Module):
         c = c0 + c1 + c2 + c3
 
         c = c + self.final_conv(c)
-
+ 
         return c
 
 if __name__ == "__main__":

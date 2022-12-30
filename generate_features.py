@@ -12,9 +12,9 @@ from dataset import get_dataloader
 from scheduler import ScheduledOptim
 
 if __name__ == "__main__":
-    device = "cpu"
+    device = "cuda"
     image_size = 512
-    batch_size = 64
+    batch_size = 256
     epsilon = 0
     N_MAX = 30000 * 4
 
@@ -26,13 +26,13 @@ if __name__ == "__main__":
         level=logging.DEBUG
     )
 
-    dataloader = get_dataloader(batch_size=batch_size, path="/Users/jonathan/Downloads/celeba_hq_256")
+    dataloader = get_dataloader(batch_size=batch_size)
 
     encoder = Encoder(3, 512).to(device)
 
-    pbar = tqdm(range(30000 * 4))
+    pbar = tqdm(range(N_MAX))
 
-    resume = "/Users/jonathan/Downloads/ae-ckpt-030000.pt"
+    resume = "ae-ckpt-030000.pt"
     if resume is not None:
         state = torch.load(resume, map_location=device)
         encoder.load_state_dict(state["encoder"])
@@ -52,6 +52,7 @@ if __name__ == "__main__":
             z = encoder(data)
             results[start : min(N_MAX, start + z.shape[0])] = z.cpu()[:min(N_MAX - start, z.shape[0])]
             start += z.shape[0]
+            print(f"=> {start}")
             pbar.update(min(N_MAX - start, z.shape[0]))
 
     torch.save(results, "features.pt")
