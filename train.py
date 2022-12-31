@@ -13,10 +13,16 @@ from swin_decoder import SwinTransformerBackbone
 from utils import *
 from dataset import get_dataloader
 
+def to_device(hyperparams: dict, device):
+    for key in hyperparams.keys():
+        if torch.is_tensor(hyperparams[key]):
+            hyperparams[key] = hyperparams[key].to(device)
+    return hyperparams
 
 class LitLatentDiffusion(pl.LightningModule):
         def __init__(self, model_config):
             super().__init__()
+            self.automatic_optimization = False
             self.hyperparams = get_hyperparams(model_config["timesteps"], device=self.device)
             self.num_epochs = model_config["num_epochs"]
             self.latent_dim = model_config["latent_dim"]
@@ -30,7 +36,7 @@ class LitLatentDiffusion(pl.LightningModule):
                 window_size=[3, 3],
                 stochastic_depth_prob=0.2,
             )
-            self.vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse").to(device)
+            self.vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse").to(self.device)
             self.vae.requires_grad = False
             self.save_hyperparameters(ignore=["vae"])
         def forward(self, x):
@@ -45,17 +51,20 @@ class LitLatentDiffusion(pl.LightningModule):
             )
             return [optimizer], [scheduler]
         def training_step(self, data, idx):
-            sch = self.lr_schedulers()
-            sch.zero_grad()
-            sch.step()
+            optimizer = self.optimizers()
+            scheduler = self.lr_schedulers()
+            optimizer.zero_grad()
             b = data.shape[0]
-            if data.shape[-1] != self.image_size:
-                data = F.interpolate(data, self.image_size, mode="bilinear", align_corners=True)
-            t = torch.randint(0, max_timesteps, size=(b, ), device=self.device)
+            # if data.shape[-1] != self.image_size:
+            #     data = F.interpolate(data, self.image_size, mode="bilinear", align_corners=True)
+            t = torch.randint(0, self.max_timesteps, size=(b, ), device=self.device)
             with torch.no_grad():
-                latents = self.vae.encoder(data).mode()
-            loss = p_losses(self.hyperparams, self.model, latents, t)
+                latents = self.vae.encode(data).latent_dist.mode()
+            loss = p_losses(to_device(self.hyperparams, self.device), self.model, latents, t)
             self.log("train_loss", loss, on_epoch=True)
+            self.manual_backward(loss)
+            optimizer.step()
+            scheduler.step()
             return loss
         def on_save_checkpoint(self, checkpoint):
             print(checkpoint)
@@ -63,48 +72,49 @@ class LitLatentDiffusion(pl.LightningModule):
         def validation_step(self, data, idx):
             b = data.shape[0]
             with torch.no_grad():
-                latents = self.vae.encode(data).mode()
+                latents = self.vae.encode(data).latent_dist.mode()
             losses = []
             for t in range(self.max_timesteps):
                 t = torch.Tensor([t] * b, device=self.device)
-                loss = p_losses(self.hyperparams, self.model, latents, t)
+                loss = p_losses(to_device(self.hyperparams, self.device), self.model, latents, t)
                 losses.append(loss)
             self.log("val_l1_loss", torch.mean(losses))
 
-
-device = "cuda"
-image_size = 256
-latent_dim = 4
-latent_size = image_size // 8
-batch_size = 256
-num_epochs = 120
-half_precision = True
-
-
-model_config = {
-    "timesteps": 1000,
-    "latent_dim": latent_dim,
-    "latent_size": latent_size,
-    "num_epochs": num_epochs
-}
-max_timesteps = model_config["timesteps"]
-
-dataloader = get_dataloader(batch_size=batch_size)
+def main():
+    image_size = 256
+    latent_dim = 4
+    latent_size = image_size // 8
+    batch_size = 128
+    num_epochs = 120
+    half_precision = True
 
 
-tb_logger = pl.loggers.TensorBoardLogger(
-    "lightning_logs/",
-)
+    model_config = {
+        "timesteps": 1000,
+        "latent_dim": latent_dim,
+        "latent_size": latent_size,
+        "num_epochs": num_epochs
+    }
 
-model = LitLatentDiffusion(model_config)
-trainer = pl.Trainer(
-    default_root_dir=".",
-    precision=16 if half_precision else 32,
-    max_epochs=num_epochs,
-    devices=torch.cuda.device_count(),
-    accelerator="gpu",
-    callbacks=[],
-    logger=tb_logger,
-)
+    dataloader = get_dataloader(batch_size=batch_size)
 
-trainer.fit(model, dataloader)
+
+    tb_logger = pl.loggers.TensorBoardLogger(
+        "lightning_logs/",
+    )
+
+    model = LitLatentDiffusion(model_config)
+    trainer = pl.Trainer(
+        default_root_dir=".",
+        precision=16 if half_precision else 32,
+        max_epochs=num_epochs,
+        devices=torch.cuda.device_count(),
+        accelerator="gpu",
+        callbacks=[],
+        logger=tb_logger,
+    )
+
+    trainer.fit(model, dataloader)
+
+if __name__ == "__main__":
+    main()

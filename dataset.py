@@ -78,7 +78,7 @@ class CustomDataset(Dataset):
 
 def get_dataloader(batch_size, path=None):
     dataset = CustomDataset(path=path)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=True)#, num_workers=cpu_count(), persistent_workers=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)#, pin_memory=True, num_workers=cpu_count(), persistent_workers=True)
     # dataloader = cycle(dataloader)
     return dataloader
 
