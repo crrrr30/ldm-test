@@ -5,6 +5,8 @@ pip install accelerate
 pip install prettytable
 pip install matplotlib
 pip install gdown
+pip install tensorboardX
+
 gdown 1qbmDDbFFpf0Dpttm1IcFm9OdpL3lIUxl
 apt install zip -y
 unzip archive.zip &> /dev/null
