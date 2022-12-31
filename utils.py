@@ -169,11 +169,12 @@ def p_sample_loop_final(hyperparams, model, shape):
 def sample(hyperparams, model, image_size, batch_size, channels=3):
     return p_sample_loop_final(hyperparams, model, shape=(batch_size, channels, image_size, image_size))
 
-def sample_and_save(hyperparams, model, iteration, image_size, num=16):
+def sample_and_save(hyperparams, model, vae, iteration, image_size, num=16):
     batch_size = 2
     assert num % batch_size == 0, f"Batch size {batch_size} must divide number of samples {num}."
     all_images_list = [sample(hyperparams, model, image_size, batch_size=batch_size, channels=3) for _ in range(num // batch_size)]
     all_images = torch.cat(all_images_list, dim=0)
+    all_images = vae.decode(all_images).sample
     all_images = (all_images + 1) * 0.5
     save_image(all_images, f"sample-{iteration:06}.png")
     
