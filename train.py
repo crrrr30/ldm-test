@@ -19,7 +19,7 @@ device = "cuda"
 image_size = 256
 latent_dim = 4
 latent_size = image_size // 8
-batch_size = 32
+batch_size = 256
 num_epochs = 120
 half_precision = True
 
