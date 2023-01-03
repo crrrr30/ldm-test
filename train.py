@@ -1,5 +1,3 @@
-import multiprocessing as mp
-
 import torch
 from torch.optim import AdamW
 import torch.nn.functional as F
@@ -61,14 +59,14 @@ class LitLatentDiffusion(pl.LightningModule):
             with torch.no_grad():
                 latents = self.vae.encode(data).latent_dist.mode()
             loss = p_losses(to_device(self.hyperparams, self.device), self.model, latents, t)
-            self.log("train_loss", loss, on_epoch=True)
+            self.log("train_loss", loss)
             self.manual_backward(loss)
             optimizer.step()
             scheduler.step()
             return loss
         def on_save_checkpoint(self, checkpoint):
-            print(checkpoint)
-            # sample_and_save(self.hyperparams, self.model, self.vae, step, self.latent_size, num=8)
+            # sample_and_save(self.hyperparams, self.model.model, self.vae, self.current_epoch, self.latent_size, num=8)
+            pass
         def validation_step(self, data, idx):
             b = data.shape[0]
             with torch.no_grad():

@@ -141,3 +141,4 @@ class SwinTransformerBackbone(nn.Module):
         x = self.final_conv(x)
         return x
 
+
