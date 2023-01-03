@@ -57,19 +57,19 @@ class LitLatentDiffusion(pl.LightningModule):
             #     data = F.interpolate(data, self.image_size, mode="bilinear", align_corners=True)
             t = torch.randint(0, self.max_timesteps, size=(b, ), device=self.device)
             with torch.no_grad():
-                latents = self.vae.encode(data).latent_dist.mode()
+                latents = self.vae.encode(data).latent_dist.sample() * 0.18215
             loss = p_losses(to_device(self.hyperparams, self.device), self.model, latents, t)
             self.log("train_loss", loss)
             self.manual_backward(loss)
             optimizer.step()
             scheduler.step()
             return loss
-        def on_save_checkpoint(self, checkpoint):
-            sample_and_save(self.hyperparams, self.model, self.vae, self.current_epoch, self.latent_size, num=8)
+        # def on_save_checkpoint(self, checkpoint):
+            # sample_and_save(self.hyperparams, self.model, self.vae, self.current_epoch, self.latent_size, num=8)
         def validation_step(self, data, idx):
             b = data.shape[0]
             with torch.no_grad():
-                latents = self.vae.encode(data).latent_dist.mode()
+                latents = self.vae.encode(data).latent_dist.sample() * 0.18215
             losses = []
             for t in range(self.max_timesteps):
                 t = torch.Tensor([t] * b, device=self.device)
