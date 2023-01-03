@@ -40,7 +40,7 @@ class LitLatentDiffusion(pl.LightningModule):
         def forward(self, x):
             return self.model(x)
         def configure_optimizers(self):
-            optimizer = AdamW(self.model.parameters(), lr=1e-6, weight_decay=1e-2)
+            optimizer = AdamW(self.model.parameters(), lr=5e-4, weight_decay=1e-2)
             scheduler = LinearLR(
                 optimizer,
                 start_factor=0.0015,
@@ -65,8 +65,7 @@ class LitLatentDiffusion(pl.LightningModule):
             scheduler.step()
             return loss
         def on_save_checkpoint(self, checkpoint):
-            # sample_and_save(self.hyperparams, self.model.model, self.vae, self.current_epoch, self.latent_size, num=8)
-            pass
+            sample_and_save(self.hyperparams, self.model, self.vae, self.current_epoch, self.latent_size, num=8)
         def validation_step(self, data, idx):
             b = data.shape[0]
             with torch.no_grad():
@@ -83,7 +82,7 @@ def main():
     latent_dim = 4
     latent_size = image_size // 8
     batch_size = 128
-    num_epochs = 120
+    num_epochs = 200
     half_precision = True
 
 
