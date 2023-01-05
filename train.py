@@ -35,12 +35,11 @@ class LitLatentDiffusion(pl.LightningModule):
                 stochastic_depth_prob=0.2,
             )
             self.vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse").to(self.device)
-            self.vae.requires_grad = False
             self.save_hyperparameters(ignore=["vae"])
         def forward(self, x):
             return self.model(x)
         def configure_optimizers(self):
-            optimizer = AdamW(self.model.parameters(), lr=5e-4, weight_decay=1e-2)
+            optimizer = AdamW(self.model.parameters(), lr=2e-4, weight_decay=1e-2)
             scheduler = LinearLR(
                 optimizer,
                 start_factor=0.0015,
@@ -82,7 +81,7 @@ def main():
     latent_dim = 4
     latent_size = image_size // 8
     batch_size = 128
-    num_epochs = 200
+    num_epochs = 1000
     half_precision = True
 
 
@@ -101,6 +100,7 @@ def main():
     )
 
     model = LitLatentDiffusion(model_config)
+    model.vae.requires_grad_(False)
     trainer = pl.Trainer(
         default_root_dir=".",
         precision=16 if half_precision else 32,
