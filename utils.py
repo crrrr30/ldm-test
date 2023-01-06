@@ -162,7 +162,7 @@ def p_sample_loop_final(hyperparams, model, shape):
     # start from pure noise (for each example in the batch)
     img = torch.randn(shape, device=device)
     for i in tqdm(reversed(range(0, hyperparams["timesteps"])), desc='Sampling loop time step', total=hyperparams["timesteps"]):
-        img = p_sample(hyperparams, model, img, torch.full((b,), i, device=device, dtype=torch.long), i)
+        img = p_sample(hyperparams, model, img, torch.full((b,), i, device=device, dtype=torch.long), i).clamp_(-1., 1.)
     return img
 
 @torch.no_grad()
@@ -172,9 +172,9 @@ def sample(hyperparams, model, image_size, batch_size, channels=3):
 def sample_and_save(hyperparams, model, vae, iteration, image_size, num=16):
     batch_size = 2
     assert num % batch_size == 0, f"Batch size {batch_size} must divide number of samples {num}."
-    all_images_list = [sample(hyperparams, model, image_size, batch_size=batch_size, channels=4) for _ in range(num // batch_size)]
+    all_images_list = [sample(hyperparams, model.cuda(), image_size, batch_size=batch_size, channels=4) for _ in range(num // batch_size)]
     all_images = torch.cat(all_images_list, dim=0)
-    all_images = vae.decode(all_images).sample
+    all_images = vae.cuda().decode(all_images / 0.18215).sample
     all_images = (all_images + 1) * 0.5
     save_image(all_images, f"sample-{iteration:06}.png")
     
